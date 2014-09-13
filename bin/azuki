@@ -1,0 +1,310 @@
+#!/usr/bin/python
+
+import beanstalkc
+import docopt
+import datetime
+import json
+import pprint
+import sys
+import whelk
+shell = whelk.Shell(redirect=False, stdin=whelk.PIPE)
+
+class Attr(object):
+    def __init__(self, **attr):
+        self.attr = attr
+        self.rev_attr = dict([(v,k) for k,v in attr.items()])
+        for k, v in attr.items():
+            setattr(self, k, v)
+
+    def __getitem__(self, item):
+        return self.attr[item]
+
+    def __iter__(self):
+        for item in self.attr:
+            yield item
+
+    def name(self, val):
+        return self.rev_attr[val]
+
+class Color(Attr):
+    # Xterm colors are the control sequence 38;5;<color> or 48;5;<color>
+    def xterm(self, val):
+        return '%d;5;%d' % (self._xterm, val)
+
+fgcolor    = Color(black=30,  red=31,  green=32,  yellow=33,  blue=34,  magenta=35,  cyan=36,  white=37,  _xterm=38, default=39,  none=None)
+bgcolor    = Color(black=40,  red=41,  green=42,  yellow=43,  blue=44,  magenta=45,  cyan=46,  white=47,  _xterm=48, default=49,  none=None)
+attr       = Attr(normal=0, bright=1, faint=2, underline=4, negative=7, conceal=8, crossed=9, none=None)
+mode = lambda *args: "%s%sm" % ('\033[', ';'.join([str(x) for x in args if x is not None]))
+reset = mode(attr.normal)
+if sys.stdout.isatty():
+    wrap = lambda text, *args: "%s%s%s" % (mode(*args), text, reset)
+else:
+    wrap = lambda text, *args: text
+
+def kick_job(self, jid):
+    """Kick a job"""
+    return self._interact('kick-job %d\r\n' % jid,
+                          ['KICKED'],
+                          ['NOT_FOUND'])
+beanstalkc.Connection.kick_job = kick_job
+
+commands = {}
+def command(fnc):
+    commands[fnc.__name__.replace('_', '-')] = fnc
+
+def main():
+    usage = """beanstalkd command line client
+
+Usage:
+    azuki [options] tubes
+    azuki [options] stats [<tube>...]
+    azuki [options] stats [<job>...]
+    azuki [options] pause <delay> <tube>...
+    azuki [options] put [--pri=PRI] [--ttr=TTR] [--delay=DELAY] <tube>
+    azuki [options] foreach <tube> [--] <command> [<arg>...]
+    azuki [options] (bury|touch|peek|kick) <job>...
+    azuki [options] (peek-buried|peek-delayed|peek-ready) [--ask] <tube>
+    azuki [options] kick <amount> <tube>
+    azuki [options] daemon <tube>...
+
+Options:
+    -h HOST, --host=HOST    Which hosts to go to (default: localhost)
+    -p PORT, --port=PORT    Which port beanstald runs on (default: 11300)
+"""
+
+    opts = docopt.docopt(usage)
+    bs = beanstalkc.Connection(opts['--host'] or 'localhost', int(opts['--port'] or 11300))
+    for command in commands:
+        if opts[command]:
+            try:
+                commands[command](bs, opts)
+            except beanstalkc.CommandFailed as e:
+                command, error, _ = e.args
+                sys.stderr.write("%s failed: %s\n" % (command, error))
+                sys.exit(1)
+
+@command
+def tubes(bs, opts):
+    print "\n".join(sorted(bs.tubes()))
+
+@command
+def stats(bs, opts):
+    if not opts['<tube>']:
+        return global_stats(bs)
+    for tube in opts['<tube>']:
+        if tube.isdigit():
+            job_stats(bs, int(tube))
+        else:
+            tube_stats(bs, tube)
+
+def global_stats(bs):
+    stats = bs.stats()
+    bsv = "Beanstalkd version %s, beanstalkc version %s" % (stats.pop('version'), getattr(beanstalkc, '__version__', 'unknown'))
+    stats.update({'bsv': wrap(bsv, attr.bright, attr.underline), 'tubes': '\n    '.join(bs.tubes())})
+    print """%(bsv)s
+Uptime: %(uptime)s (pid %(pid)d, rusage user %(rusage-utime).2f system %(rusage-stime).2f)
+Connections:
+    Total:       %(total-connections)d
+    Current:     %(current-connections)d
+    Producers:   %(current-producers)d
+    Consumers:   %(current-workers)d
+    Waiting:     %(current-waiting)d
+Tubes:
+    %(tubes)s
+Jobs:
+    Delayed:     %(current-jobs-delayed)d
+    Ready:       %(current-jobs-ready)d
+    Urgent:      %(current-jobs-urgent)d
+    Reserved:    %(current-jobs-reserved)d
+    Buried:      %(current-jobs-buried)d
+    Total:       %(total-jobs)d
+Commands:
+    Stats:       %(cmd-stats)d
+    List:        %(cmd-list-tubes)d
+                 %(cmd-list-tubes-watched)d (watched)
+                 %(cmd-list-tube-used)d (used)
+    Tube stats:  %(cmd-stats-tube)d
+         use:    %(cmd-use)d
+         watch:  %(cmd-watch)d
+         ignore: %(cmd-ignore)d
+         pause:  %(cmd-pause-tube)d
+         peek:   %(cmd-peek-delayed)d (delayed)
+                 %(cmd-peek-ready)d (ready)
+                 %(cmd-peek-buried)d (buried)
+    Job put:     %(cmd-put)d
+        reserve: %(cmd-reserve)d
+                 %(cmd-reserve-with-timeout)d (with timeout)
+        touch:   %(cmd-touch)d
+        release: %(cmd-release)d
+        bury:    %(cmd-bury)d
+        kick:    %(cmd-kick)d
+        delete:  %(cmd-delete)d
+        peek:    %(cmd-peek)d
+        stats:   %(cmd-stats-job)d
+        timeout: %(job-timeouts)d""" % stats
+
+def tube_stats(bs, tube):
+    stats = bs.stats_tube(tube)
+    name = stats['name']
+    if stats['pause-time-left']:
+        name += ' (paused until %s)' % (datetime.datetime.now() + datetime.timedelta(0, stats['pause-time-left'])).strftime('%Y-%m-%d %H:%M:%S')
+    stats.update({'name': wrap(name, attr.bright, attr.underline)})
+
+    print """%(name)s
+Connections:
+    Producers:   %(current-using)d
+    Consumers:   %(current-watching)d
+    Waiting:     %(current-waiting)d
+Jobs:
+    Delayed:     %(current-jobs-delayed)d
+    Ready:       %(current-jobs-ready)d
+    Urgent:      %(current-jobs-urgent)d
+    Reserved:    %(current-jobs-reserved)d
+    Buried:      %(current-jobs-buried)d
+    Deleted:     %(cmd-delete)d
+    Total:       %(total-jobs)d""" % stats
+
+def job_stats(bs, job):
+    stats = bs.stats_job(job)
+    stats.update({'name': wrap('Job %d' % stats['id'], attr.bright, attr.underline), 
+                  'age': humantime(stats['age']),
+                  'delay': humantime(stats['delay'])})
+    if stats['state'] == 'reserved':
+        stats['state'] += ' (%d seconds left)' % stats['time-left']
+    print """%(name)s
+Age:      %(age)s
+Delay:    %(delay)s
+State:    %(state)s
+Tube:     %(tube)s
+Priority: %(pri)d
+TTR:      %(ttr)d
+Reserves: %(reserves)d
+Releases: %(releases)d
+Buries:   %(buries)d
+Kicks:    %(kicks)d""" % stats
+
+@command
+def pause(bs, opts):
+    delay = int(opts['<delay>'])
+    for tube in opts['<tube>']:
+        bs.pause_tube(tube, delay)
+
+@command
+def peek(bs, opts):
+    for job in opts['<job>']:
+        display(bs, bs.peek(int(job)))
+
+@command
+def peek_buried(bs, opts):
+    bs.use(opts['<tube>'][0])
+    job = bs.peek_buried()
+    display(bs, job)
+    if opts['--ask']:
+        what = ask_user("kick", "delete", "skip", default="skip")
+        if what == 'kick':
+            bs.kick(1)
+        elif what == 'delete':
+            job.delete()
+
+@command
+def peek_ready(bs, opts):
+    bs.use(opts['<tube>'][0])
+    job = bs.peek_ready()
+    display(bs, job)
+    if opts['--ask']:
+        what = ask_user("bury", "delete", "skip", default="skip")
+        if what == 'bury':
+            job.bury()
+        if what == 'delete':
+            job.delete()
+
+@command
+def peek_delayed(bs, opts):
+    bs.use(opts['<tube>'][0])
+    job = bs.peek_delayed()
+    display(bs, job)
+    if opts['--ask']:
+        what = ask_user("bury", "delete", "skip", default="skip")
+        if what == 'bury':
+            job.bury()
+        if what == 'delete':
+            job.delete()
+
+@command
+def kick(bs, opts):
+    if len(opts['<job>']) == 2 and not opts['<job>'][1].isdigit():
+        bs.use(opts['<job>'][1])
+        bs.kick(int(opts['<job>'][0]))
+    else:
+        for job in opts['<job>']:
+            bs.kick_job(int(job))
+
+@command
+def put(bs, opts):
+    data = sys.stdin.read()
+    bs.use(opts['<tube>'][0])
+    bs.put(data, priority=opts['--pri'] or beanstalkc.DEFAULT_PRIORITY, delay=int(opts['--delay'] or 0), ttr=int(opts['--ttr'] or beanstalkc.DEFAULT_TTR))
+
+@command
+def foreach(bs, opts):
+    bs.watch(opts['<tube>'][0])
+    while True:
+        job = bs.reserve(0)
+        if not job:
+            break
+        print "Processing job %d" % job.jid
+        if shell[opts['<command>']](*opts['<arg>'], input=job.body):
+            job.delete()
+        else:
+            job.bury()
+
+@command
+def daemon(bs, opts):
+    import azuki
+    import azuki.daemon
+    import logging
+    import sys
+
+    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+    azuki.add_beanstalk('default', bs.host, bs.port)
+    bs.close()
+    d = azuki.daemon.Daemon('default')
+    for tube in opts['<tube>']:
+        d.watch(tube)
+    d.run()
+
+def display(bs, job):
+    if not job:
+        print "Job not found"
+        sys.exit(1)
+    job_stats(bs, job.jid)
+    body = job.body
+    try:
+        body = pprint.pformat(json.loads(job.body))
+    except ValueError:
+        pass
+    print body
+
+def ask_user(*options, **kwargs):
+    default = kwargs['default']
+    _options = ['[%s]%s' % (x[0], x[1:]) for x in options]
+    ans = raw_input("/".join(_options) + '? (%s) ' % default[0]).strip().lower()
+    if not ans:
+        return default
+    for opt in options:
+        if ans in (opt, opt[0]):
+            return opt
+    return ask_user(*options, **kwargs)
+
+def humantime(time):
+    if time < 180:
+        return '%d seconds' % time
+    elif time < 10800:
+        return '%d minutes' % (time / 60)
+    elif time < 172800:
+        return '%d hours' % (time / 3600)
+    elif time < 7776000:
+        return '%d days' % (time / 86400)
+
+if __name__ == '__main__':
+    main()
