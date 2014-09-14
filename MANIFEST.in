@@ -1,0 +1,8 @@
+include README.md
+include COPYING
+include test/*.sh
+include test/*.t
+recursive-include test/python *.py
+include test/sharness/*.sh
+include test/sharness/test/Makefile
+include test/Makefile

@@ -2,3 +2,6 @@
 .*.sw?
 trash*
 test-results
+MANIFEST
+dist
+build
