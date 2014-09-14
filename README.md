@@ -20,7 +20,7 @@ $ azuki stats 123
 ```
 
 The stats command will give you basic statistics, such as the total amount of
-connections, jobs and commands.  If you specifa a tube, such as `default`, you
+connections, jobs and commands.  If you specify a tube, such as `default`, you
 will see the statistics of that tube, and if you specify a job ID, you will see
 its details and content.
 
