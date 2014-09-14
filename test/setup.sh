@@ -1,8 +1,10 @@
 . ./sharness.sh
-export PYTHONPATH="$SHARNESS_BUILD_DIRECTORY/lib:$PYTHONPATH"
+export PYTHONPATH="$SHARNESS_BUILD_DIRECTORY/lib:$SHARNESS_BUILD_DIRECTORY/test/python:$PYTHONPATH"
 export PATH="$SHARNESS_BUILD_DIRECTORY/bin:$PATH"
 
 export test_tube="azuki-test-$this_test"
+
+python -c 'import django' 2>/dev/null && test_set_prereq DJANGO
 
 clean_tubes() {
     for tube in $(azuki tubes); do
@@ -23,4 +25,8 @@ job_counter=0
 submit_test_job() {
     job_counter=$(expr $job_counter + 1)
     echo "test job $job_counter" | azuki put "$@" "$test_tube"
+}
+
+test_python() {
+    ( cd $SHARNESS_TEST_DIRECTORY/python && python -munittest $1 )
 }
