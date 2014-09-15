@@ -41,12 +41,14 @@ if sys.stdout.isatty():
 else:
     wrap = lambda text, *args: text
 
-def kick_job(self, jid):
-    """Kick a job"""
-    return self._interact('kick-job %d\r\n' % jid,
-                          ['KICKED'],
-                          ['NOT_FOUND'])
-beanstalkc.Connection.kick_job = kick_job
+# Compatibility with beanstalkc < 0.4
+if not hasattr(beanstalkc.Connection, 'kick_job'):
+    def kick_job(self, jid):
+        """Kick a job"""
+        return self._interact('kick-job %d\r\n' % jid,
+                              ['KICKED'],
+                              ['NOT_FOUND'])
+    beanstalkc.Connection.kick_job = kick_job
 
 commands = {}
 def command(fnc):
