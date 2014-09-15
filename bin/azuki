@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import beanstalkc
+import contextlib
 import docopt
 import datetime
 import json
@@ -73,15 +74,17 @@ Options:
 """
 
     opts = docopt.docopt(usage)
-    bs = beanstalkc.Connection(opts['--host'] or 'localhost', int(opts['--port'] or 11300))
-    for command in commands:
-        if opts[command]:
-            try:
-                commands[command](bs, opts)
-            except beanstalkc.CommandFailed as e:
-                command, error, _ = e.args
-                sys.stderr.write("%s failed: %s\n" % (command, error))
-                sys.exit(1)
+    host = opts['--host'] or 'localhost'
+    port = int(opts['--port'] or 11300)
+    with contextlib.closing(beanstalkc.Connection(host, port)) as bs:
+        for command in commands:
+            if opts[command]:
+                try:
+                    commands[command](bs, opts)
+                except beanstalkc.CommandFailed as e:
+                    command, error, _ = e.args
+                    sys.stderr.write("%s failed: %s\n" % (command, error))
+                    sys.exit(1)
 
 @command
 def tubes(bs, opts):
