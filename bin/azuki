@@ -144,7 +144,12 @@ Commands:
         timeout: %(job-timeouts)d""" % stats
 
 def tube_stats(bs, tube):
-    stats = bs.stats_tube(tube)
+    # Defaults for older version of beanstalkd that don't (always) expose these
+    # variables, especially on a clean start
+    stats = {
+        'cmd-delete': '?',
+    }
+    stats.update(bs.stats_tube(tube))
     name = stats['name']
     if stats['pause-time-left']:
         name += ' (paused until %s)' % (datetime.datetime.now() + datetime.timedelta(0, stats['pause-time-left'])).strftime('%Y-%m-%d %H:%M:%S')
@@ -161,7 +166,7 @@ Jobs:
     Urgent:      %(current-jobs-urgent)d
     Reserved:    %(current-jobs-reserved)d
     Buried:      %(current-jobs-buried)d
-    Deleted:     %(cmd-delete)d
+    Deleted:     %(cmd-delete)s
     Total:       %(total-jobs)d""" % stats
 
 def job_stats(bs, job):
