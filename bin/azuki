@@ -73,15 +73,18 @@ Options:
 """
 
     opts = docopt.docopt(usage)
-    bs = beanstalkc.Connection(opts['--host'] or 'localhost', int(opts['--port'] or 11300))
-    for command in commands:
-        if opts[command]:
-            try:
-                commands[command](bs, opts)
-            except beanstalkc.CommandFailed as e:
-                command, error, _ = e.args
-                sys.stderr.write("%s failed: %s\n" % (command, error))
-                sys.exit(1)
+    command = commands[[x for x in commands if opts[x]][0]]
+    bs = None
+    try:
+        bs = beanstalkc.Connection(opts['--host'] or 'localhost', int(opts['--port'] or 11300))
+        command(bs, opts)
+    except beanstalkc.CommandFailed as e:
+        command, error, _ = e.args
+        sys.stderr.write("%s failed: %s\n" % (command, error))
+        sys.exit(1)
+    finally:
+        if bs:
+            bs.close()
 
 @command
 def tubes(bs, opts):
