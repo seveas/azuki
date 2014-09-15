@@ -17,5 +17,6 @@ setup(name = "azuki",
         'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
         'Programming Language :: Python',
         'Topic :: Software Development :: Libraries :: Python Modules',
-      ]
+      ],
+      install_requires=["whelk>=2.4", "docopt>=0.5.0", "PyYAML>=3.10"],
 )
