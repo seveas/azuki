@@ -3,13 +3,13 @@
 from distutils.core import setup
 
 setup(name = "azuki",
-      version = "0.9",
+      version = "0.9.1",
       author = "Dennis Kaarsemaker",
       author_email = "dennis@kaarsemaker.net",
       url = "http://github.com/seveas/azuki",
       description = "Beanstalkd utilities for CLI and python",
       package_dir = {'': 'lib'},
-      packages = ["azuki"],
+      packages = ["azuki","azuki.management","azuki.management.commands"],
       scripts = ["bin/azuki"],
       classifiers = [
         'Development Status :: 5 - Production/Stable',
