@@ -1,0 +1,17 @@
+Source: azuki
+Maintainer: Dennis Kaarsemaker <dennis@kaarsemaker.net>
+Section: python
+Priority: optional
+Build-Depends: debhelper, python-all, dh-python
+Standards-Version: 3.9.3
+X-Python-Version: >= 2.6
+Homepage: https://github.com/seveas/azuki
+
+Package: azuki
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}, python-whelk, python-docopt, python-yaml, python-beanstalkc
+Suggests: python-django, beanstalkd
+Description: Python/django library and CLI tool for beanstalk access
+ azuki makes it easy to create tools using beanstalkd tubes for asynchronous
+ execution.  From queueing parallelizing quick shell hacks to integrating
+ asynchronous execution with your django application, azuki lets you do it all.
