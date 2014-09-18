@@ -1,3 +1,9 @@
+azuki (0.9.2-1) UNRELEASED; urgency=medium
+
+  * New upstream release
+
+ -- Dennis Kaarsemaker <dennis@seahawk>  Thu, 18 Sep 2014 14:13:33 +0200
+
 azuki (0.9.1-1) trusty; urgency=medium
 
   * Initial version
