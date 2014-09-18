@@ -58,7 +58,7 @@ def main():
     usage = """beanstalkd command line client
 
 Usage:
-    azuki [options] tubes
+    azuki [options] tubes [-v]
     azuki [options] stats [<tube>...]
     azuki [options] stats [<job>...]
     azuki [options] pause <delay> <tube>...
@@ -90,7 +90,19 @@ Options:
 
 @command
 def tubes(bs, opts):
-    print "\n".join(sorted(bs.tubes()))
+    tubes = sorted(bs.tubes())
+    if not opts['-v']:
+        print "\n".join(tubes)
+        return
+    m = max([len(x) for x in tubes])
+    tubes_f = ["%-*s" % (m, tube) for tube in tubes]
+    print wrap("%-*s  Producers Consumers Waiting   Delayed   Ready     Urgent    Reserved  Buried    Total" % (m, 'Tube'), attr.bright)
+    for (tube, tube_f) in zip(tubes, tubes_f):
+        stats = {'name-formatted': tube_f}
+        stats.update(bs.stats_tube(tube))
+        print ("%(name-formatted)s  %(current-using)-9d %(current-watching)-9d %(current-waiting)-9d " +
+               "%(current-jobs-delayed)-9d %(current-jobs-ready)-9d %(current-jobs-urgent)-9d " +
+               "%(current-jobs-reserved)-9d %(current-jobs-buried)-9d %(total-jobs)-9d") % stats
 
 @command
 def stats(bs, opts):

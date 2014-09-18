@@ -13,7 +13,7 @@ The main utility, `azuki`, makes it easy to inspect and modify beanstalk queues
 from the command line.
 
 ```
-$ azuki tubes
+$ azuki tubes [-v]
 $ azuki stats
 $ azuki stats default
 $ azuki stats 123
@@ -23,6 +23,9 @@ The stats command will give you basic statistics, such as the total amount of
 connections, jobs and commands.  If you specify a tube, such as `default`, you
 will see the statistics of that tube, and if you specify a job ID, you will see
 its details and content.
+
+The tubes command shows a list of tubes. Add the -v parameter to also get a
+summary of all processes and jobs for all queues.
 
 Peeking at tubes
 ----------------
