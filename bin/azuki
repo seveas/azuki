@@ -7,7 +7,11 @@ import json
 import pprint
 import sys
 import whelk
-shell = whelk.Shell(redirect=False, stdin=whelk.PIPE)
+shell = whelk.Shell(redirect=False, stdin=whelk.PIPE, encoding=sys.getdefaultencoding())
+
+PY3 = sys.version_info[0] > 2
+if PY3:
+    raw_input = input
 
 class Attr(object):
     def __init__(self, **attr):
@@ -92,17 +96,17 @@ Options:
 def tubes(bs, opts):
     tubes = sorted(bs.tubes())
     if not opts['-v']:
-        print "\n".join(tubes)
+        print("\n".join(tubes))
         return
     m = max([len(x) for x in tubes])
     tubes_f = ["%-*s" % (m, tube) for tube in tubes]
-    print wrap("%-*s  Producers Consumers Waiting   Delayed   Ready     Urgent    Reserved  Buried    Total" % (m, 'Tube'), attr.bright)
+    print(wrap("%-*s  Producers Consumers Waiting   Delayed   Ready     Urgent    Reserved  Buried    Total" % (m, 'Tube'), attr.bright))
     for (tube, tube_f) in zip(tubes, tubes_f):
         stats = {'name-formatted': tube_f}
         stats.update(bs.stats_tube(tube))
-        print ("%(name-formatted)s  %(current-using)-9d %(current-watching)-9d %(current-waiting)-9d " +
+        print(("%(name-formatted)s  %(current-using)-9d %(current-watching)-9d %(current-waiting)-9d " +
                "%(current-jobs-delayed)-9d %(current-jobs-ready)-9d %(current-jobs-urgent)-9d " +
-               "%(current-jobs-reserved)-9d %(current-jobs-buried)-9d %(total-jobs)-9d") % stats
+               "%(current-jobs-reserved)-9d %(current-jobs-buried)-9d %(total-jobs)-9d") % stats)
 
 @command
 def stats(bs, opts):
@@ -118,7 +122,7 @@ def global_stats(bs):
     stats = bs.stats()
     bsv = "Beanstalkd version %s, beanstalkc version %s" % (stats.pop('version'), getattr(beanstalkc, '__version__', 'unknown'))
     stats.update({'bsv': wrap(bsv, attr.bright, attr.underline), 'tubes': '\n    '.join(bs.tubes())})
-    print """%(bsv)s
+    print("""%(bsv)s
 Uptime: %(uptime)s (pid %(pid)d, rusage user %(rusage-utime).2f system %(rusage-stime).2f)
 Connections:
     Total:       %(total-connections)d
@@ -158,7 +162,7 @@ Commands:
         delete:  %(cmd-delete)d
         peek:    %(cmd-peek)d
         stats:   %(cmd-stats-job)d
-        timeout: %(job-timeouts)d""" % stats
+        timeout: %(job-timeouts)d""" % stats)
 
 def tube_stats(bs, tube):
     # Defaults for older version of beanstalkd that don't (always) expose these
@@ -172,7 +176,7 @@ def tube_stats(bs, tube):
         name += ' (paused until %s)' % (datetime.datetime.now() + datetime.timedelta(0, stats['pause-time-left'])).strftime('%Y-%m-%d %H:%M:%S')
     stats.update({'name': wrap(name, attr.bright, attr.underline)})
 
-    print """%(name)s
+    print("""%(name)s
 Connections:
     Producers:   %(current-using)d
     Consumers:   %(current-watching)d
@@ -184,7 +188,7 @@ Jobs:
     Reserved:    %(current-jobs-reserved)d
     Buried:      %(current-jobs-buried)d
     Deleted:     %(cmd-delete)s
-    Total:       %(total-jobs)d""" % stats
+    Total:       %(total-jobs)d""" % stats)
 
 def job_stats(bs, job):
     stats = bs.stats_job(job)
@@ -193,7 +197,7 @@ def job_stats(bs, job):
                   'delay': humantime(stats['delay'])})
     if stats['state'] == 'reserved':
         stats['state'] += ' (%d seconds left)' % stats['time-left']
-    print """%(name)s
+    print("""%(name)s
 Age:      %(age)s
 Delay:    %(delay)s
 State:    %(state)s
@@ -203,7 +207,7 @@ TTR:      %(ttr)d
 Reserves: %(reserves)d
 Releases: %(releases)d
 Buries:   %(buries)d
-Kicks:    %(kicks)d""" % stats
+Kicks:    %(kicks)d""" % stats)
 
 @command
 def pause(bs, opts):
@@ -274,7 +278,7 @@ def foreach(bs, opts):
         job = bs.reserve(0)
         if not job:
             break
-        print "Processing job %d" % job.jid
+        print("Processing job %d" % job.jid)
         if shell[opts['<command>']](*opts['<arg>'], input=job.body):
             job.delete()
         else:
@@ -297,7 +301,7 @@ def daemon(bs, opts):
 
 def display(bs, job):
     if not job:
-        print "Job not found"
+        print("Job not found")
         sys.exit(1)
     job_stats(bs, job.jid)
     body = job.body
@@ -305,7 +309,7 @@ def display(bs, job):
         body = pprint.pformat(json.loads(job.body))
     except ValueError:
         pass
-    print body
+    print(body)
 
 def ask_user(*options, **kwargs):
     default = kwargs['default']

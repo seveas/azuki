@@ -26,7 +26,7 @@ def connect_cached(beanstalk, tube, __cache={}):
         __cache[beanstalk] = beanstalkc.Connection(**bsc)
     try:
         __cache[beanstalk].use(tube)
-    except Exception, e:
+    except Exception:
         # Retry once
         __cache[beanstalk] = beanstalkc.Connection(**bsc)
         __cache[beanstalk].use(tube)
@@ -55,7 +55,7 @@ def beanstalk(tube_or_func='default', beanstalk='default'):
                     'handler': 'django',
                     'app':     self._meta.app_label,
                     'model':   self._meta.object_name,
-                    'method':  func.func_name,
+                    'method':  hasattr(func, 'func_name') and func.func_name or func.__name__,
                     'pk':      self.pk,
                     'args':    args,
                     'kwargs':  kwargs,

@@ -80,7 +80,7 @@ class Daemon(object):
         self.logger.info("Waiting for job")
         try:
             return self.bs.reserve()
-        except Exception, e:
-            self.logger.error("Connection to beanstalk failed: %s, reconnecting" % str(e))
+        except Exception:
+            self.logger.error("Connection to beanstalk failed: %s, reconnecting" % str(sys.exc_info()[1]))
             self.connect()
             return self.bs.reserve()
