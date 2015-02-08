@@ -121,8 +121,10 @@ def stats(bs, opts):
 def global_stats(bs):
     stats = bs.stats()
     bsv = "Beanstalkd version %s, beanstalkc version %s" % (stats.pop('version'), getattr(beanstalkc, '__version__', 'unknown'))
-    stats.update({'bsv': wrap(bsv, attr.bright, attr.underline), 'tubes': '\n    '.join(bs.tubes())})
-    print("""%(bsv)s
+    stats.update({'bsv': wrap(bsv, attr.bright, attr.underline), 'tubes': '\n    '.join(bs.tubes()), 'hostline': ''})
+    if 'hostname' in stats:
+        stats['hostline'] = '\nHost: %(hostname)s (id: %(id)s)' % stats
+    print("""%(bsv)s%(hostline)s
 Uptime: %(uptime)s (pid %(pid)d, rusage user %(rusage-utime).2f system %(rusage-stime).2f)
 Connections:
     Total:       %(total-connections)d
