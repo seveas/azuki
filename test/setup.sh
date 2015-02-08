@@ -4,7 +4,13 @@ export PATH="$SHARNESS_BUILD_DIRECTORY/bin:$PATH"
 
 export test_tube="azuki-test-$this_test"
 
-python -c 'import django' 2>/dev/null && test_set_prereq DJANGO
+if [ x"$PYTHON" = x ]; then
+    PYTHON=python
+fi
+
+$PYTHON -c 'import django' 2>/dev/null && test_set_prereq DJANGO
+
+alias azuki="$PYTHON $SHARNESS_BUILD_DIRECTORY/bin/azuki"
 
 clean_tubes() {
     for tube in $(azuki tubes); do
@@ -28,5 +34,5 @@ submit_test_job() {
 }
 
 test_python() {
-    ( cd $SHARNESS_TEST_DIRECTORY/python && python -munittest $1 )
+    ( cd $SHARNESS_TEST_DIRECTORY/python && $PYTHON -munittest $1 )
 }
