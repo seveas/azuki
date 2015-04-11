@@ -3,6 +3,7 @@ import beanstalkc
 from functools import wraps
 import json
 from collections import defaultdict
+import os
 
 beanstalks = {'default': {'host': '127.0.0.1', 'port': 11300}}
 running_azuki_daemon = False
@@ -49,13 +50,15 @@ def beanstalk(tube_or_func='default', beanstalk='default'):
                     'args':     args,
                     'kwargs':   kwargs,
                 }
+                if func.__module__ == '__main__':
+                    data['file'] = os.path.abspath(func.__code__.co_filename)
             else:
                 self = args[0]; args=args[1:]
                 data = {
                     'handler': 'django',
                     'app':     self._meta.app_label,
                     'model':   self._meta.object_name,
-                    'method':  hasattr(func, 'func_name') and func.func_name or func.__name__,
+                    'method':  func.__name__,
                     'pk':      self.pk,
                     'args':    args,
                     'kwargs':  kwargs,
