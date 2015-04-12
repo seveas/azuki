@@ -1,4 +1,10 @@
-azuki (0.9.2-1) UNRELEASED; urgency=medium
+azuki (1.0-1) vivid; urgency=medium
+
+  * New upstream release
+
+ -- Dennis Kaarsemaker <dennis@kaarsemaker.net>  Sun, 12 Apr 2015 09:16:42 +0200
+
+azuki (0.9.2-1) utopic; urgency=medium
 
   * New upstream release
 
