@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(name = "azuki",
-      version = "0.9.2",
+      version = "1.0",
       author = "Dennis Kaarsemaker",
       author_email = "dennis@kaarsemaker.net",
       url = "http://github.com/seveas/azuki",
