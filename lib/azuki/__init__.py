@@ -33,9 +33,9 @@ def connect_cached(beanstalk, tube, __cache={}):
         __cache[beanstalk].use(tube)
     return __cache[beanstalk]
 
-def beanstalk(tube_or_func='default', beanstalk='default'):
+def beanstalk(tube_or_func='default', beanstalk='default', priority=2147483648, delay=0, ttr=120):
     tube = 'default' if callable(tube_or_func) else tube_or_func
-    def decorator(func, tube=tube, beanstalk=beanstalk):
+    def decorator(func, tube=tube, beanstalk=beanstalk, priority=priority, delay=delay, ttr=ttr):
         @wraps(func)
         def wrapper(*args, **kwargs):
             if running_azuki_daemon:
@@ -70,11 +70,11 @@ def beanstalk(tube_or_func='default', beanstalk='default'):
                 raise TypeError("Can only queue json-serializable arguments" + repr(data))
 
             bs = connect_cached(beanstalk, tube)
-            return bs.put(data)
+            return bs.put(data, priority=priority, delay=delay, ttr=ttr)
         wrapper.stats = lambda: connect_cached(beanstalk, tube).stats_tube(tube)
         all_tubes[beanstalk].add(tube)
         return wrapper
 
     if callable(tube_or_func):
-        return decorator(tube_or_func, tube, beanstalk)
+        return decorator(tube_or_func, tube, beanstalk, priority, delay, ttr)
     return decorator

@@ -5,7 +5,8 @@ test_description="Test python and django API's"
 . ./setup.sh
 
 test_expect_success "Python API" '
-    echo "Hello, world" >expected &&
+    echo "Hello, important world" >expected &&
+    echo "Hello, world" >>expected &&
     test_python t_plain &&
     azuki daemon $test_tube >actual &&
     sed "/^INFO/d" -i actual &&
