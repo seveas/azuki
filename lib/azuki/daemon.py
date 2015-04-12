@@ -1,4 +1,8 @@
-import beanstalkc
+try:
+    import beanstalkc
+except (ImportError, SyntaxError):
+    # Hey, we're on python 3, let's load our fixed version!
+    import azuki.beanstalkc as beanstalkc
 import azuki
 import imp
 import logging
