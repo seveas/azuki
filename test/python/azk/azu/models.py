@@ -7,5 +7,5 @@ class Azu(models.Model):
 
     @beanstalk(os.environ['test_tube'])
     def greet(self):
-        print "Hello, %s" % self.name
+        print("Hello, %s" % self.name)
         sys.exit(0)

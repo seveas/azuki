@@ -1,5 +1,10 @@
-import beanstalkc
+try:
+    import beanstalkc
+except (ImportError, SyntaxError):
+    # Hey, we're on python 3, let's load our fixed version!
+    import azuki.beanstalkc as beanstalkc
 import azuki
+import imp
 import logging
 import sys
 import json
@@ -20,6 +25,7 @@ class Daemon(object):
     def __init__(self, beanstalk):
         self.beanstalk = beanstalk
         self.logger = logging.getLogger("azuki")
+        self.main_modules = {}
 
     def run(self):
         azuki.running_azuki_daemon = True
@@ -54,8 +60,18 @@ class Daemon(object):
 
     # TODO: handle ImportError, AttributeError
     def handle_function(self, job):
-        __import__(job['module'])
-        module = sys.modules[job['module']]
+        if job['module'] == '__main__':
+            if job['file'] not in self.main_modules:
+                with open(job['file']) as fd:
+                    dwb = sys.dont_write_bytecode
+                    sys.dont_write_bytecode = True
+                    self.main_modules[job['file']] = imp.load_module('azuki.fake_main', fd, job['file'], ('', 'r', imp.PY_SOURCE))
+                    sys.dont_write_bytecode = dwb
+                module = self.main_modules[job['file']]
+        else:
+            if job['module'] not in sys.modules:
+                __import__(job['module'])
+            module = sys.modules[job['module']]
         getattr(module, job['function'])(*job['args'], **job['kwargs'])
 
     # TODO: hanlde model not found, instance not found, AttributeError
@@ -80,7 +96,7 @@ class Daemon(object):
         self.logger.info("Waiting for job")
         try:
             return self.bs.reserve()
-        except Exception, e:
-            self.logger.error("Connection to beanstalk failed: %s, reconnecting" % str(e))
+        except Exception:
+            self.logger.error("Connection to beanstalk failed: %s, reconnecting" % str(sys.exc_info()[1]))
             self.connect()
             return self.bs.reserve()

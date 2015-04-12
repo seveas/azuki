@@ -1,0 +1,13 @@
+#!/usr/bin/env python
+
+import azuki
+
+def main():
+    hello('world')
+
+@azuki.beanstalk
+def hello(who):
+    print("Hello, " + who)
+
+if __name__ == '__main__':
+    main()
