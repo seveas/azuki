@@ -37,6 +37,11 @@ class Daemon(object):
                 job.delete()
             except Exception:
                 self.job_error(job, tb=traceback.format_exc())
+            finally:
+                if django:
+                    # Close all DB connections so we don't hang/crash later
+                    for connection in connections:
+                        connections[connection].close()
 
     def watch(self, tube):
         azuki.all_tubes[self.beanstalk].add(tube)
@@ -82,10 +87,6 @@ class Daemon(object):
         instance = model.objects.get(pk=job['pk'])
         self.logger.info("Calling %s.%s.%s, pk %d" % (job['app'], job['model'], job['method'], job['pk']))
         getattr(instance, job['method'])(*job['args'], **job['kwargs'])
-
-        # Close all DB connections so we don't hang/crash later
-        for connection in connections:
-            connections[connection].close()
 
     def connect(self):
         self.bs = beanstalkc.Connection(**azuki.beanstalks[self.beanstalk])
