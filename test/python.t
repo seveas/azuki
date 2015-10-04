@@ -23,6 +23,17 @@ test_expect_success "Python API from __main__" '
     test_cmp expected actual
 '
 
+test_expect_success "Python API with rescheduling" '
+    test_when_finished clean_tubes &&
+    echo "1" > expected &&
+    echo "3" >> expected &&
+    echo "2" >> expected &&
+    test_python t_reschedule &&
+    azuki daemon $test_tube >actual &&
+    sed "/^INFO/d" -i actual &&
+    test_cmp expected actual
+'
+
 test_expect_success DJANGO "Django API" '
     echo "Hello, django" >expected &&
     ( cd $SHARNESS_TEST_DIRECTORY/python/azk && python manage.py syncdb --noinput ) &&

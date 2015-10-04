@@ -37,6 +37,12 @@ class Daemon(object):
             try:
                 self.handle(job)
                 job.delete()
+            except azuki.Reschedule:
+                e = sys.exc_info()[1]
+                stats = job.stats()
+                self.bs.use(stats['tube'])
+                self.bs.put(job.body, delay=e.delay, priority=stats['pri'], ttr=stats['ttr'])
+                job.delete()
             except Exception:
                 self.job_error(job, tb=traceback.format_exc())
             finally:
