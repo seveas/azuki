@@ -5,6 +5,7 @@ test_description="Test python and django API's"
 . ./setup.sh
 
 test_expect_success "Python API" '
+    test_when_finished clean_tubes &&
     echo "Hello, important world" >expected &&
     echo "Hello, world" >>expected &&
     test_python t_plain &&
@@ -14,7 +15,8 @@ test_expect_success "Python API" '
 '
 
 test_expect_success "Python API from __main__" '
-    echo "Hello, world" >expected &&
+    test_when_finished clean_tubes &&
+    echo "Hello, main" >expected &&
     $PYTHON $SHARNESS_TEST_DIRECTORY/python/t_main &&
     azuki daemon $test_tube >actual &&
     sed "/^INFO/d" -i actual &&
@@ -22,9 +24,10 @@ test_expect_success "Python API from __main__" '
 '
 
 test_expect_success DJANGO "Django API" '
+    echo "Hello, django" >expected &&
     ( cd $SHARNESS_TEST_DIRECTORY/python/azk && python manage.py syncdb --noinput ) &&
     test_python t_django &&
-    azuki daemon $test_tube >actual &&
+    DJANGO_SETTINGS_MODULE=azk.settings azuki daemon $test_tube >actual &&
     sed "/^INFO/d" -i actual &&
     test_cmp expected actual
 '

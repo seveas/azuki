@@ -1,6 +1,6 @@
 from django.db import models
 from azuki import beanstalk
-import os
+import sys,os
 
 class Azu(models.Model):
     name = models.CharField("Name", max_length=24)

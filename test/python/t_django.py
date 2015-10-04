@@ -6,5 +6,5 @@ from azk.azu.models import Azu
 
 class DjangoTest(unittest.TestCase):
     def test_django(self):
-        obj = Azu.objects.create(name="world")
+        obj = Azu.objects.create(name="django")
         self.assertEqual(type(obj.greet()), int)
