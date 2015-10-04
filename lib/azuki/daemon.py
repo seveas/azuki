@@ -80,7 +80,7 @@ class Daemon(object):
                     sys.dont_write_bytecode = True
                     self.main_modules[job.data['file']] = imp.load_module('azuki.fake_main', fd, job.data['file'], ('', 'r', imp.PY_SOURCE))
                     sys.dont_write_bytecode = dwb
-                module = self.main_modules[job.data['file']]
+            module = self.main_modules[job.data['file']]
         else:
             if job.data['module'] not in sys.modules:
                 __import__(job.data['module'])
