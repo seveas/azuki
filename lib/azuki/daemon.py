@@ -63,38 +63,38 @@ class Daemon(object):
 
     def handle(self, job):
         try:
-            job = json.loads(job.body)
+            job.data = json.loads(job.body)
         except ValueError:
             return self.job_error(job, "Could not decode job")
-        handler = job.get('handler', None)
+        handler = job.data.get('handler', None)
         if not hasattr(self, 'handle_' + handler):
             return self.job_error(job, "Unknown handler '%s'" % handler)
         getattr(self, 'handle_' + handler)(job)
 
     # TODO: handle ImportError, AttributeError
     def handle_function(self, job):
-        if job['module'] == '__main__':
-            if job['file'] not in self.main_modules:
-                with open(job['file']) as fd:
+        if job.data['module'] == '__main__':
+            if job.data['file'] not in self.main_modules:
+                with open(job.data['file']) as fd:
                     dwb = sys.dont_write_bytecode
                     sys.dont_write_bytecode = True
-                    self.main_modules[job['file']] = imp.load_module('azuki.fake_main', fd, job['file'], ('', 'r', imp.PY_SOURCE))
+                    self.main_modules[job.data['file']] = imp.load_module('azuki.fake_main', fd, job.data['file'], ('', 'r', imp.PY_SOURCE))
                     sys.dont_write_bytecode = dwb
-                module = self.main_modules[job['file']]
+                module = self.main_modules[job.data['file']]
         else:
-            if job['module'] not in sys.modules:
-                __import__(job['module'])
-            module = sys.modules[job['module']]
-        getattr(module, job['function'])(*job['args'], **job['kwargs'])
+            if job.data['module'] not in sys.modules:
+                __import__(job.data['module'])
+            module = sys.modules[job.data['module']]
+        getattr(module, job.data['function'])(*job.data['args'], **job.data['kwargs'])
 
     # TODO: hanlde model not found, instance not found, AttributeError
     def handle_django(self, job):
         if not django:
             return self.job_error(job, "Unable to handle django jobs")
-        model = get_model(job['app'], job['model'])
-        instance = model.objects.get(pk=job['pk'])
-        self.logger.info("Calling %s.%s.%s, pk %d" % (job['app'], job['model'], job['method'], job['pk']))
-        getattr(instance, job['method'])(*job['args'], **job['kwargs'])
+        model = get_model(job.data['app'], job.data['model'])
+        instance = model.objects.get(pk=job.data['pk'])
+        self.logger.info("Calling %s.%s.%s, pk %d" % (job.data['app'], job.data['model'], job.data['method'], job.data['pk']))
+        getattr(instance, job.data['method'])(*job.data['args'], **job.data['kwargs'])
 
     def connect(self):
         self.bs = beanstalkc.Connection(**azuki.beanstalks[self.beanstalk])
