@@ -133,6 +133,22 @@ To process the queued jobs, you run `azuki daemon example-tube`. This will take
 items from the tube, import the `example` module and call the `hello` function
 for real.
 
+Rescheduling
+------------
+With beanstalk you can bury a job to tell beanstalk not to attempt the job
+again until manually told to do so, but if you just want to delay execution of
+a job, you can raise an `azuki.Reschedule` exception.
+
+```
+from azuki import beanstalk, Reschedule
+
+@beanstalk('example-tube')
+def process(task):
+    if not am_ready_for(task):
+        raise Reschedule(120)
+    do_task(task)
+```
+
 Django API
 ----------
 The downside of scheduling things in beanstalk queues, is that argument to

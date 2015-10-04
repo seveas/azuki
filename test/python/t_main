@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 
 import azuki
+import sys,os
 
 def main():
-    hello('world')
+    hello('main')
 
-@azuki.beanstalk
+@azuki.beanstalk(os.environ['test_tube'])
 def hello(who):
     print("Hello, " + who)
+    sys.exit(0)
 
 if __name__ == '__main__':
     main()

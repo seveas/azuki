@@ -82,3 +82,7 @@ def beanstalk(tube_or_func='default', beanstalk='default', priority=2147483648, 
     if callable(tube_or_func):
         return decorator(tube_or_func, tube, beanstalk, priority, delay, ttr)
     return decorator
+
+class Reschedule(Exception):
+    def __init__(self, delay):
+        self.delay = delay
