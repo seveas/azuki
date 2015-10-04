@@ -15,7 +15,9 @@ try:
     from django.conf import settings
     from django.db.models import get_model
     from django.db import connections
-    django = True
+    import django
+    if hasattr(django, 'setup'):
+        django.setup()
 except ImportError:
     django = False
 except ImproperlyConfigured:

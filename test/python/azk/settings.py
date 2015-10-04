@@ -4,6 +4,7 @@ BEANSTALK_SERVERS = {'default': {'host': '127.0.0.1', 'port': 11300}}
 SECRET_KEY = "unused"
 DEBUG = True
 INSTALLED_APPS = ( 'azk.azu', )
+MIDDLEWARE_CLASSES = []
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',

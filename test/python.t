@@ -29,6 +29,7 @@ test_expect_success DJANGO "Django API" '
     test_python t_django &&
     DJANGO_SETTINGS_MODULE=azk.settings azuki daemon $test_tube >actual &&
     sed "/^INFO/d" -i actual &&
+    sed "/^DEBUG/d" -i actual &&
     test_cmp expected actual
 '
 
